@@ -1,0 +1,151 @@
+<!doctype html>
+<html lang="ja">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Point Diary</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <aside class="sidebar" aria-label="ルーム">
+        <div class="brand">
+          <div class="brand-mark">P</div>
+          <div>
+            <h1>Point Diary</h1>
+            <p id="todayLabel"></p>
+          </div>
+        </div>
+
+        <section class="panel compact">
+          <label for="displayName">名前</label>
+          <input id="displayName" type="text" maxlength="24" autocomplete="name" />
+          <p id="syncStatus" class="sync-status">Local</p>
+        </section>
+
+        <section class="panel">
+          <div class="tabs" role="tablist" aria-label="ルーム種別">
+            <button id="personalTab" class="tab active" type="button">個人</button>
+            <button id="groupTab" class="tab" type="button">グループ</button>
+          </div>
+
+          <div id="personalForm" class="room-form">
+            <button id="enterPersonal" class="primary full" type="button">個人ルームへ</button>
+          </div>
+
+          <div id="groupForm" class="room-form hidden">
+            <label for="groupId">グループID</label>
+            <input id="groupId" type="text" maxlength="32" placeholder="family-2026" />
+            <label for="groupPassword">PW</label>
+            <input id="groupPassword" type="password" maxlength="32" placeholder="共有PW" />
+            <button id="enterGroup" class="primary full" type="button">入室</button>
+          </div>
+        </section>
+
+        <section class="panel qr-panel">
+          <div class="section-title">
+            <h2>QR</h2>
+            <span id="qrStatus" class="pill">SPECIAL-100</span>
+          </div>
+          <video id="qrVideo" playsinline muted></video>
+          <div class="button-row">
+            <button id="startQr" type="button">読み取り</button>
+            <button id="stopQr" type="button">停止</button>
+          </div>
+          <div class="manual-qr">
+            <input id="manualQr" type="text" placeholder="QRコード" />
+            <button id="applyQr" type="button">追加</button>
+          </div>
+        </section>
+      </aside>
+
+      <section class="workspace">
+        <header class="topbar">
+          <div>
+            <p class="eyebrow" id="roomMode">Personal</p>
+            <h2 id="roomTitle">個人ルーム</h2>
+          </div>
+          <div class="score-strip">
+            <div>
+              <span>今日</span>
+              <strong id="todayPoints">0</strong>
+            </div>
+            <div>
+              <span>今月</span>
+              <strong id="monthPoints">0</strong>
+            </div>
+            <div>
+              <span>投稿</span>
+              <strong id="postCount">0</strong>
+            </div>
+          </div>
+        </header>
+
+        <section class="composer">
+          <div class="point-picker" aria-label="ポイント">
+            <button class="point-option active" type="button" data-points="1">+1</button>
+            <button class="point-option" type="button" data-points="3">+3</button>
+            <button class="point-option" type="button" data-points="5">+5</button>
+            <button class="point-option" type="button" data-points="10">+10</button>
+          </div>
+          <textarea id="postText" maxlength="180" placeholder="今日の記録"></textarea>
+          <div class="composer-actions">
+            <label class="file-chip" for="photoInput">写真</label>
+            <input id="photoInput" type="file" accept="image/*" />
+            <span id="photoName"></span>
+            <button id="addPost" class="primary" type="button">投稿</button>
+          </div>
+        </section>
+
+        <section class="content-grid">
+          <section class="calendar-section">
+            <div class="section-title">
+              <h2 id="calendarTitle">カレンダー</h2>
+              <div class="button-row tight">
+                <button id="prevMonth" type="button" aria-label="前の月">‹</button>
+                <button id="nextMonth" type="button" aria-label="次の月">›</button>
+              </div>
+            </div>
+            <div class="week-row" aria-hidden="true">
+              <span>日</span><span>月</span><span>火</span><span>水</span><span>木</span><span>金</span><span>土</span>
+            </div>
+            <div id="calendarGrid" class="calendar-grid"></div>
+          </section>
+
+          <section class="insight-section">
+            <div class="section-title">
+              <h2>AI</h2>
+              <button id="refreshAi" type="button">更新</button>
+            </div>
+            <div id="aiInsight" class="ai-card"></div>
+          </section>
+        </section>
+
+        <section class="timeline-section">
+          <div class="section-title">
+            <h2>タイムライン</h2>
+            <span id="lockHint" class="muted"></span>
+          </div>
+          <div id="timeline" class="timeline"></div>
+        </section>
+      </section>
+    </main>
+
+    <template id="postTemplate">
+      <article class="post-card">
+        <div class="post-head">
+          <div>
+            <strong class="post-author"></strong>
+            <span class="post-time"></span>
+          </div>
+          <span class="post-points"></span>
+        </div>
+        <p class="post-text"></p>
+        <img class="post-image" alt="" />
+        <button class="delete-post" type="button">削除</button>
+      </article>
+    </template>
+
+    <script type="module" src="./app.js"></script>
+  </body>
+</html>

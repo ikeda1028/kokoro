@@ -1,0 +1,57 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    function signedIn() {
+      return request.auth != null;
+    }
+
+    function isRoomMember(roomId) {
+      return signedIn() &&
+        exists(/databases/$(database)/documents/rooms/$(roomId)/members/$(request.auth.uid));
+    }
+
+    match /users/{userId} {
+      allow read, write: if signedIn() && request.auth.uid == userId;
+    }
+
+    match /rooms/{roomId} {
+      allow create: if signedIn();
+      allow read: if signedIn();
+      allow update: if false;
+      allow delete: if false;
+
+      match /members/{userId} {
+        allow read: if isRoomMember(roomId);
+        allow create, update: if signedIn() && request.auth.uid == userId;
+        allow delete: if false;
+      }
+
+      match /posts/{postId} {
+        allow read: if isRoomMember(roomId);
+        allow create: if isRoomMember(roomId) &&
+          request.resource.data.keys().hasOnly([
+            'authorId',
+            'authorName',
+            'points',
+            'text',
+            'photoUrl',
+            'kind',
+            'createdAt',
+            'lockedAt'
+          ]) &&
+          request.resource.data.authorId == request.auth.uid &&
+          request.resource.data.points is int &&
+          request.resource.data.points > 0 &&
+          request.resource.data.points <= 100 &&
+          request.resource.data.createdAt == request.time &&
+          request.resource.data.lockedAt > request.time &&
+          request.resource.data.lockedAt < request.time + duration.value(25, 'h');
+        allow delete: if isRoomMember(roomId) &&
+          resource.data.authorId == request.auth.uid &&
+          request.time < resource.data.lockedAt;
+        allow update: if false;
+      }
+    }
+  }
+}
