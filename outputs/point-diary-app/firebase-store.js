@@ -122,6 +122,7 @@ export async function createFirebaseStore(config) {
               text: post.text || "",
               photoData: post.photoUrl || "",
               photoUrl: post.photoUrl || "",
+              iconUrl: post.iconUrl || "",
               kind: post.kind || "normal",
               createdAt: toIso(post.createdAt),
             };
@@ -156,6 +157,7 @@ export async function createFirebaseStore(config) {
       points: post.points,
       text: post.text,
       photoUrl,
+      iconUrl: post.iconUrl || "",
       kind: post.kind,
       createdAt: firestoreModule.serverTimestamp(),
       lockedAt: firestoreModule.Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)),

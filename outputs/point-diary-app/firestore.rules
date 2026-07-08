@@ -36,6 +36,7 @@ service cloud.firestore {
             'points',
             'text',
             'photoUrl',
+            'iconUrl',
             'kind',
             'createdAt',
             'lockedAt'
