@@ -11,6 +11,7 @@ const SPECIAL_QR_CODES = {
 const state = {
   data: loadData(),
   selectedPoints: 1,
+  selectedIconUrl: "./assets/icons/car.png",
   calendarDate: new Date(),
   photoData: "",
   photoFile: null,
@@ -240,15 +241,15 @@ async function enterGroup() {
 
 async function addPost(points, kind = "normal", textOverride = "") {
   const text = textOverride || $("postText").value.trim();
-  if (!text && !state.photoData && kind === "normal") return;
 
   const post = {
     id: newId(),
     authorId: state.data.currentUserId,
     authorName: state.data.displayName || "あなた",
-    points,
-    text: text || (kind === "qr" ? "QRボーナス" : ""),
+    points: kind === "normal" ? 1 : points,
+    text: text || (kind === "qr" ? "QRボーナス" : "アイコン記録"),
     photoData: kind === "normal" ? state.photoData : "",
+    iconUrl: kind === "normal" ? state.selectedIconUrl : "",
     kind,
     createdAt: new Date().toISOString(),
   };
@@ -281,6 +282,8 @@ function clearComposer() {
   $("photoName").textContent = "";
   state.photoData = "";
   state.photoFile = null;
+  state.selectedIconUrl = "./assets/icons/car.png";
+  renderIconSelection();
 }
 
 async function deletePost(postId) {
@@ -395,9 +398,13 @@ function renderCalendar() {
       <span class="date-num">${date.getDate()}</span>
       <div class="author-dots">${posts
         .slice(0, 8)
-        .map((post) => `<span title="${escapeHtml(post.authorName)}"></span>`)
+        .map((post) =>
+          post.iconUrl
+            ? `<img src="${escapeHtml(post.iconUrl)}" alt="" title="${escapeHtml(post.authorName)}" />`
+            : `<span title="${escapeHtml(post.authorName)}"></span>`,
+        )
         .join("")}</div>
-      <span class="day-points">${posts.reduce((sum, post) => sum + post.points, 0)}</span>
+      <span class="day-points">${posts.length}</span>
     `;
     grid.appendChild(cell);
   }
@@ -418,9 +425,16 @@ function renderTimeline() {
     const node = template.content.firstElementChild.cloneNode(true);
     node.querySelector(".post-author").textContent = post.authorName;
     node.querySelector(".post-time").textContent = formatDateTime(post.createdAt);
-    node.querySelector(".post-points").textContent = `+${post.points}`;
+    const postPoints = node.querySelector(".post-points");
+    if (post.iconUrl) {
+      postPoints.innerHTML = `<img src="${escapeHtml(post.iconUrl)}" alt="" />`;
+    } else {
+      postPoints.textContent = `+${post.points}`;
+    }
     node.querySelector(".post-text").textContent = post.text;
-    if (post.photoData || post.photoUrl) node.querySelector(".post-image").src = post.photoData || post.photoUrl;
+    if (post.photoData || post.photoUrl) {
+      node.querySelector(".post-image").src = post.photoData || post.photoUrl;
+    }
     const button = node.querySelector(".delete-post");
     button.disabled = !canDelete(post);
     button.textContent = canDelete(post) ? "削除" : "ロック済み";
@@ -446,8 +460,8 @@ function renderAi() {
   const topAuthor = Object.entries(authors).sort((a, b) => b[1] - a[1])[0];
 
   $("aiInsight").innerHTML = `
-    <strong>${total ? `合計 ${total} pt` : "記録待ち"}</strong>
-    <p>${bestDay ? `いちばん伸びた日は ${bestDay[0]} の ${bestDay[1]} pt。` : "最初の投稿を作ると傾向が出ます。"}</p>
+    <strong>${total ? `合計 ${total} 個` : "記録待ち"}</strong>
+    <p>${bestDay ? `いちばん伸びた日は ${bestDay[0]} の ${bestDay[1]} 個。` : "最初の投稿を作ると傾向が出ます。"}</p>
     <p>${topAuthor ? `今のリードは ${escapeHtml(topAuthor[0])} さん。` : "グループでは投稿者ごとの動きも見えます。"}</p>
     <p>${posts.length >= 3 ? "写真や短い日記が混ざるほど、AIコメントの精度を上げやすくなります。" : "3件以上たまると、週次コメントに近い見え方になります。"}</p>
   `;
@@ -525,11 +539,10 @@ function bindEvents() {
     render();
   });
 
-  document.querySelectorAll(".point-option").forEach((button) => {
+  document.querySelectorAll(".icon-option").forEach((button) => {
     button.addEventListener("click", () => {
-      document.querySelectorAll(".point-option").forEach((item) => item.classList.remove("active"));
-      button.classList.add("active");
-      state.selectedPoints = Number(button.dataset.points);
+      state.selectedIconUrl = button.dataset.icon || "";
+      renderIconSelection();
     });
   });
 
@@ -538,11 +551,18 @@ function bindEvents() {
     if (!file) return;
     state.photoFile = file;
     $("photoName").textContent = file.name;
+    renderIconSelection();
     const reader = new FileReader();
     reader.addEventListener("load", () => {
       state.photoData = reader.result;
     });
     reader.readAsDataURL(file);
+  });
+}
+
+function renderIconSelection() {
+  document.querySelectorAll(".icon-option").forEach((button) => {
+    button.classList.toggle("active", button.dataset.icon === state.selectedIconUrl);
   });
 }
 

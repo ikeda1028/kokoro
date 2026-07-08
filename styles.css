@@ -166,8 +166,7 @@ p {
   margin-bottom: 14px;
 }
 
-.tab.active,
-.point-option.active {
+.tab.active {
   border-color: var(--mint);
   background: rgba(47, 143, 123, 0.12);
   color: var(--mint-dark);
@@ -272,14 +271,34 @@ p {
   padding: 16px;
 }
 
-.point-picker {
+.icon-picker {
   display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 8px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
 }
 
-.point-option {
-  font-weight: 900;
+.icon-option {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  align-items: center;
+  gap: 8px;
+  min-height: 58px;
+  padding: 8px;
+  text-align: left;
+}
+
+.icon-option.active {
+  border-color: var(--mint);
+  background: rgba(47, 143, 123, 0.12);
+  color: var(--mint-dark);
+  font-weight: 800;
+}
+
+.icon-option img {
+  width: 42px;
+  height: 42px;
+  border-radius: 8px;
+  object-fit: cover;
 }
 
 .composer-actions {
@@ -425,6 +444,13 @@ p {
   background: var(--sky);
 }
 
+.author-dots img {
+  width: 18px;
+  height: 18px;
+  border-radius: 5px;
+  object-fit: cover;
+}
+
 .ai-card {
   min-height: 210px;
   border-radius: 8px;
@@ -473,11 +499,22 @@ p {
 }
 
 .post-points {
+  display: inline-grid;
+  place-items: center;
   border-radius: 8px;
   background: rgba(245, 184, 75, 0.26);
   color: #7a5200;
-  padding: 7px 10px;
+  min-width: 46px;
+  min-height: 38px;
+  padding: 4px 8px;
   font-weight: 900;
+}
+
+.post-points img {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  object-fit: cover;
 }
 
 .post-text {
