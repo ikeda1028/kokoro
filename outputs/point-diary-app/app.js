@@ -42,6 +42,7 @@ function defaultData() {
         title: "個人ルーム",
         passwordHash: "",
         posts: [],
+        heartEvents: [],
       },
     },
   };
@@ -68,6 +69,7 @@ function currentRoom() {
       title: state.data.currentRoomId.replace(/^group:/, "") || "個人ルーム",
       passwordHash: "",
       posts: [],
+      heartEvents: [],
     };
   }
   return state.data.rooms[state.data.currentRoomId];
@@ -153,6 +155,7 @@ function subscribeCurrentRoom() {
         title: room.title,
         passwordHash: room.passwordHash || "",
         posts: room.posts || [],
+        heartEvents: room.heartEvents || [],
       };
       saveData();
       render();
@@ -192,6 +195,7 @@ async function ensurePersonalRoom() {
       title: "個人ルーム",
       passwordHash: "",
       posts: [],
+      heartEvents: [],
     };
   }
   await setRoom(id);
@@ -230,6 +234,7 @@ async function enterGroup() {
         title: code,
         passwordHash,
         posts: [],
+        heartEvents: [],
       };
     }
 
@@ -237,6 +242,48 @@ async function enterGroup() {
   } catch (error) {
     $("qrStatus").textContent = error.message === "wrong-password" ? "PWが違います" : "入室エラー";
   }
+}
+
+function getHeartState() {
+  const room = currentRoom();
+  if (room.type !== "group") {
+    return { visible: false, available: false, sentCount: 0 };
+  }
+
+  const events = [...(room.heartEvents || [])].sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+  const ownEvents = events.filter((event) => event.authorId === state.data.currentUserId);
+  const sentCount = ownEvents.length;
+  const lastOwnSentAt = ownEvents.length ? new Date(ownEvents[ownEvents.length - 1].createdAt).getTime() : 0;
+  const receivedAfterLastSend = events.some(
+    (event) => event.authorId !== state.data.currentUserId && new Date(event.createdAt).getTime() > lastOwnSentAt,
+  );
+
+  return {
+    visible: true,
+    available: sentCount === 0 || receivedAfterLastSend,
+    sentCount,
+  };
+}
+
+async function sendHeart() {
+  const heart = getHeartState();
+  if (!heart.visible || !heart.available) return;
+
+  const event = {
+    id: newId(),
+    authorId: state.data.currentUserId,
+    authorName: state.data.displayName || "あなた",
+    createdAt: new Date().toISOString(),
+  };
+
+  if (state.remote) {
+    await state.remote.sendHeart(state.data.currentRoomId, event);
+    return;
+  }
+
+  currentRoom().heartEvents = [...(currentRoom().heartEvents || []), event];
+  saveData();
+  render();
 }
 
 async function addPost(points, kind = "normal", textOverride = "") {
@@ -483,6 +530,15 @@ function render() {
   renderCalendar();
   renderTimeline();
   renderAi();
+  renderHeartExchange();
+}
+
+function renderHeartExchange() {
+  const heart = getHeartState();
+  $("heartExchange").classList.toggle("hidden", !heart.visible);
+  $("heartCount").textContent = heart.sentCount;
+  $("sendHeart").disabled = !heart.available;
+  $("sendHeart").classList.toggle("hidden", !heart.available);
 }
 
 function escapeHtml(value) {
@@ -530,6 +586,7 @@ function bindEvents() {
   );
   $("stopQr").addEventListener("click", stopQr);
   $("applyQr").addEventListener("click", () => applyQrCode($("manualQr").value));
+  $("sendHeart").addEventListener("click", () => sendHeart());
 
   $("prevMonth").addEventListener("click", () => {
     state.calendarDate.setMonth(state.calendarDate.getMonth() - 1);

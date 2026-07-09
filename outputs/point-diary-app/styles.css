@@ -180,7 +180,7 @@ p {
 }
 
 .hidden {
-  display: none;
+  display: none !important;
 }
 
 .primary {
@@ -229,6 +229,52 @@ p {
   grid-template-columns: 1fr 70px;
   gap: 8px;
   margin-top: 8px;
+}
+
+.heart-exchange {
+  display: grid;
+  grid-template-columns: 74px 1fr;
+  align-items: center;
+  gap: 12px;
+  margin-top: 12px;
+  border: 1px solid rgba(100, 143, 255, 0.34);
+  border-radius: 8px;
+  background: linear-gradient(135deg, rgba(49, 91, 220, 0.12), rgba(249, 216, 122, 0.16));
+  padding: 10px;
+}
+
+.heart-button {
+  display: grid;
+  place-items: center;
+  width: 74px;
+  height: 62px;
+  min-height: 62px;
+  border-color: rgba(240, 138, 179, 0.55);
+  background: linear-gradient(145deg, #f08ab3, #f45d98);
+  color: #fff;
+  font-size: 34px;
+  line-height: 1;
+  box-shadow: 0 10px 26px rgba(240, 93, 152, 0.22);
+}
+
+.heart-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.42;
+}
+
+.heart-meter strong {
+  display: block;
+  color: var(--ink);
+  font-size: 24px;
+  line-height: 1;
+}
+
+.heart-meter span {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 900;
 }
 
 .workspace {

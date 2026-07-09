@@ -53,6 +53,19 @@ service cloud.firestore {
           request.time < resource.data.lockedAt;
         allow update: if false;
       }
+
+      match /heartEvents/{heartEventId} {
+        allow read: if isRoomMember(roomId);
+        allow create: if isRoomMember(roomId) &&
+          request.resource.data.keys().hasOnly([
+            'authorId',
+            'authorName',
+            'createdAt'
+          ]) &&
+          request.resource.data.authorId == request.auth.uid &&
+          request.resource.data.createdAt == request.time;
+        allow update, delete: if false;
+      }
     }
   }
 }
