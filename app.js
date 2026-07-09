@@ -319,6 +319,7 @@ async function startQr() {
   }
 
   const video = $("qrVideo");
+  video.closest(".qr-visual").classList.add("scanning");
   const detector = new BarcodeDetector({ formats: ["qr_code"] });
   state.qrStream = await navigator.mediaDevices.getUserMedia({ video: { facingMode: "environment" } });
   video.srcObject = state.qrStream;
@@ -343,6 +344,7 @@ function stopQr() {
   }
   state.qrStream = null;
   $("qrVideo").srcObject = null;
+  $("qrVideo").closest(".qr-visual").classList.remove("scanning");
 }
 
 function totals() {
