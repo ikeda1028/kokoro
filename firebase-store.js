@@ -88,12 +88,14 @@ export async function createFirebaseStore(config) {
 
     let roomData = null;
     let posts = [];
+    let heartEvents = [];
 
     const emit = () => {
       if (!roomData) return;
       onChange({
         ...roomData,
         posts,
+        heartEvents,
       });
     };
 
@@ -133,9 +135,33 @@ export async function createFirebaseStore(config) {
       onError,
     );
 
+    const heartQuery = firestoreModule.query(
+      firestoreModule.collection(db, "rooms", roomId, "heartEvents"),
+      firestoreModule.orderBy("createdAt", "desc"),
+      firestoreModule.limit(80),
+    );
+
+    const unsubscribeHearts = firestoreModule.onSnapshot(
+      heartQuery,
+      (snapshot) => {
+        heartEvents = snapshot.docs.map((heartDoc) => {
+          const heart = heartDoc.data();
+          return {
+            id: heartDoc.id,
+            authorId: heart.authorId,
+            authorName: heart.authorName || "",
+            createdAt: toIso(heart.createdAt),
+          };
+        });
+        emit();
+      },
+      onError,
+    );
+
     return () => {
       unsubscribeRoom();
       unsubscribePosts();
+      unsubscribeHearts();
     };
   }
 
@@ -168,11 +194,21 @@ export async function createFirebaseStore(config) {
     await firestoreModule.deleteDoc(firestoreModule.doc(db, "rooms", roomId, "posts", postId));
   }
 
+  async function sendHeart(roomId, heart) {
+    const uid = await signIn();
+    await firestoreModule.addDoc(firestoreModule.collection(db, "rooms", roomId, "heartEvents"), {
+      authorId: uid,
+      authorName: heart.authorName,
+      createdAt: firestoreModule.serverTimestamp(),
+    });
+  }
+
   return {
     addPost,
     deletePost,
     joinRoom,
     saveUser,
+    sendHeart,
     signIn,
     subscribeRoom,
   };
