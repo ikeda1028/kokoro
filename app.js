@@ -20,6 +20,7 @@ const state = {
   remote: null,
   unsubscribeRoom: null,
   syncStatus: "Local",
+  lastHeartAvailable: null,
 };
 
 const $ = (id) => document.getElementById(id);
@@ -268,6 +269,7 @@ function getHeartState() {
 async function sendHeart() {
   const heart = getHeartState();
   if (!heart.visible || !heart.available) return;
+  animateHeartSend();
 
   const event = {
     id: newId(),
@@ -277,13 +279,40 @@ async function sendHeart() {
   };
 
   if (state.remote) {
-    await state.remote.sendHeart(state.data.currentRoomId, event);
+    try {
+      await state.remote.sendHeart(state.data.currentRoomId, event);
+    } catch (error) {
+      console.error(error);
+      $("heartStatus").textContent = "送信エラー";
+    }
     return;
   }
 
   currentRoom().heartEvents = [...(currentRoom().heartEvents || []), event];
   saveData();
   render();
+}
+
+function animateHeartSend() {
+  const exchange = $("heartExchange");
+  exchange.classList.remove("sent");
+  void exchange.offsetWidth;
+  exchange.classList.add("sent");
+  $("heartStatus").textContent = "送ったよ";
+
+  const offsets = [-28, -12, 8, 24, 38];
+  offsets.forEach((offset, index) => {
+    const heart = document.createElement("span");
+    heart.className = "floating-heart";
+    heart.textContent = "♥";
+    heart.style.setProperty("--heart-x", `${offset}px`);
+    heart.style.setProperty("--heart-rotate", `${offset * 0.8}deg`);
+    heart.style.animationDelay = `${index * 42}ms`;
+    exchange.appendChild(heart);
+    window.setTimeout(() => heart.remove(), 1200);
+  });
+
+  window.setTimeout(() => exchange.classList.remove("sent"), 700);
 }
 
 async function addPost(points, kind = "normal", textOverride = "") {
@@ -539,6 +568,17 @@ function renderHeartExchange() {
   $("heartCount").textContent = heart.sentCount;
   $("sendHeart").disabled = !heart.available;
   $("sendHeart").classList.toggle("hidden", !heart.available);
+  $("heartStatus").textContent = heart.available ? "ハートを送れるよ" : "相手からのハート待ち";
+
+  if (heart.visible && heart.available && state.lastHeartAvailable === false) {
+    const exchange = $("heartExchange");
+    exchange.classList.remove("arrived");
+    void exchange.offsetWidth;
+    exchange.classList.add("arrived");
+    $("heartStatus").textContent = "ハートが届いたよ";
+    window.setTimeout(() => exchange.classList.remove("arrived"), 1100);
+  }
+  state.lastHeartAvailable = heart.visible ? heart.available : null;
 }
 
 function escapeHtml(value) {
