@@ -61,6 +61,7 @@ function defaultData() {
         passwordHash: "",
         posts: [],
         heartEvents: [],
+        members: [],
       },
     },
   };
@@ -97,6 +98,7 @@ function currentRoom() {
       passwordHash: "",
       posts: [],
       heartEvents: [],
+      members: [],
     };
   }
   return state.data.rooms[state.data.currentRoomId];
@@ -191,6 +193,7 @@ function subscribeCurrentRoom() {
         passwordHash: room.passwordHash || "",
         posts: room.posts || [],
         heartEvents: room.heartEvents || [],
+        members: room.members || [],
       };
       saveData();
       render();
@@ -236,6 +239,13 @@ async function ensurePersonalRoom() {
       passwordHash: "",
       posts: [],
       heartEvents: [],
+      members: [
+        {
+          userId: state.data.currentUserId,
+          displayName: state.data.displayName || "あなた",
+          joinedAt: new Date().toISOString(),
+        },
+      ],
     };
   }
   await setRoom(id);
@@ -337,7 +347,20 @@ async function joinGroup(code, password, displayName, title) {
         passwordHash,
         posts: [],
         heartEvents: [],
+        members: [],
       };
+    }
+
+    const members = state.data.rooms[roomId].members || [];
+    if (!members.some((member) => member.userId === state.data.currentUserId)) {
+      state.data.rooms[roomId].members = [
+        ...members,
+        {
+          userId: state.data.currentUserId,
+          displayName,
+          joinedAt: new Date().toISOString(),
+        },
+      ];
     }
 
     state.data.registeredGroups[roomId] = {
@@ -348,6 +371,29 @@ async function joinGroup(code, password, displayName, title) {
     await setRoom(roomId);
   } catch (error) {
     $("qrStatus").textContent = error.message === "wrong-password" ? "PWが違います" : "入室エラー";
+  }
+}
+
+async function leaveCurrentGroup() {
+  const room = currentRoom();
+  if (room.type !== "group") return;
+  const roomId = room.id;
+
+  try {
+    if (state.remote) {
+      await state.remote.leaveRoom(roomId);
+    } else {
+      room.members = (room.members || []).filter((member) => member.userId !== state.data.currentUserId);
+    }
+    delete state.data.registeredGroups[roomId];
+    delete state.data.rooms[roomId];
+    state.syncStatus = state.remote ? "Firebase" : "Local";
+    saveData();
+    await ensurePersonalRoom();
+  } catch (error) {
+    console.error(error);
+    state.syncStatus = "退会エラー";
+    render();
   }
 }
 
@@ -669,7 +715,56 @@ function render() {
   renderTimeline();
   renderAi();
   renderHeartExchange();
+  renderMembers();
   renderRoomForms();
+}
+
+function renderMembers() {
+  const room = currentRoom();
+  const panel = $("memberPanel");
+  panel.classList.toggle("hidden", room.type !== "group");
+  if (room.type !== "group") return;
+
+  const postAuthors = room.posts.map((post) => ({
+    userId: post.authorId,
+    displayName: post.authorName,
+    joinedAt: post.createdAt,
+  }));
+  const members = dedupeMembers([
+    ...(room.members || []),
+    {
+      userId: state.data.currentUserId,
+      displayName: state.data.displayName || "あなた",
+      joinedAt: new Date().toISOString(),
+    },
+    ...postAuthors,
+  ]);
+
+  $("memberList").innerHTML = members
+    .map((member) => {
+      const isSelf = member.userId === state.data.currentUserId;
+      const initial = escapeHtml((member.displayName || "?").trim().slice(0, 1) || "?");
+      return `
+        <span class="member-chip ${isSelf ? "self" : ""}" title="${escapeHtml(member.displayName)}">
+          <strong>${initial}</strong>
+          <span>${escapeHtml(member.displayName)}${isSelf ? "（自分）" : ""}</span>
+        </span>
+      `;
+    })
+    .join("");
+}
+
+function dedupeMembers(members) {
+  const map = new Map();
+  for (const member of members) {
+    if (!member.userId) continue;
+    map.set(member.userId, {
+      userId: member.userId,
+      displayName: member.displayName || "名前なし",
+      joinedAt: member.joinedAt || "",
+    });
+  }
+  return [...map.values()].sort((a, b) => String(a.joinedAt).localeCompare(String(b.joinedAt)));
 }
 
 function renderRoomForms() {
@@ -769,6 +864,7 @@ function bindEvents() {
     state.roomFormMode = "group";
     renderRoomForms();
   });
+  $("leaveGroup").addEventListener("click", () => leaveCurrentGroup());
   $("addPost").addEventListener("click", () => addPost(state.selectedPoints));
   $("refreshAi").addEventListener("click", renderAi);
   $("startQr").addEventListener("click", () =>

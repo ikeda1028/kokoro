@@ -89,6 +89,7 @@ export async function createFirebaseStore(config) {
     let roomData = null;
     let posts = [];
     let heartEvents = [];
+    let members = [];
 
     const emit = () => {
       if (!roomData) return;
@@ -96,6 +97,7 @@ export async function createFirebaseStore(config) {
         ...roomData,
         posts,
         heartEvents,
+        members,
       });
     };
 
@@ -159,10 +161,32 @@ export async function createFirebaseStore(config) {
       onError,
     );
 
+    const membersQuery = firestoreModule.query(
+      firestoreModule.collection(db, "rooms", roomId, "members"),
+      firestoreModule.orderBy("joinedAt", "asc"),
+    );
+
+    const unsubscribeMembers = firestoreModule.onSnapshot(
+      membersQuery,
+      (snapshot) => {
+        members = snapshot.docs.map((memberDoc) => {
+          const member = memberDoc.data();
+          return {
+            userId: member.userId || memberDoc.id,
+            displayName: member.displayName || "名前なし",
+            joinedAt: toIso(member.joinedAt),
+          };
+        });
+        emit();
+      },
+      onError,
+    );
+
     return () => {
       unsubscribeRoom();
       unsubscribePosts();
       unsubscribeHearts();
+      unsubscribeMembers();
     };
   }
 
@@ -205,10 +229,16 @@ export async function createFirebaseStore(config) {
     });
   }
 
+  async function leaveRoom(roomId) {
+    const uid = await signIn();
+    await firestoreModule.deleteDoc(firestoreModule.doc(db, "rooms", roomId, "members", uid));
+  }
+
   return {
     addPost,
     deletePost,
     joinRoom,
+    leaveRoom,
     saveUser,
     sendHeart,
     signIn,

@@ -675,8 +675,60 @@ p {
 
 .calendar-section,
 .insight-section,
-.timeline-section {
+.timeline-section,
+.member-panel {
   padding: 16px;
+}
+
+.member-panel {
+  margin-bottom: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: var(--shadow);
+}
+
+.member-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.member-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 7px;
+  min-height: 38px;
+  border: 1px solid rgba(100, 143, 255, 0.28);
+  border-radius: 8px;
+  background: rgba(49, 91, 220, 0.08);
+  padding: 6px 9px 6px 7px;
+  color: var(--ink);
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.member-chip strong {
+  display: grid;
+  place-items: center;
+  width: 24px;
+  height: 24px;
+  border-radius: 8px;
+  background: linear-gradient(145deg, #173aa1, #648fff);
+  color: #fff;
+  font-size: 13px;
+}
+
+.member-chip.self {
+  border-color: rgba(240, 138, 179, 0.5);
+  background: rgba(240, 138, 179, 0.12);
+}
+
+.danger {
+  border-color: rgba(240, 138, 179, 0.48);
+  background: rgba(240, 138, 179, 0.12);
+  color: #9d3761;
+  font-weight: 900;
 }
 
 .section-title {
