@@ -38,6 +38,7 @@ service cloud.firestore {
             'photoUrl',
             'iconUrl',
             'kind',
+            'entryDate',
             'createdAt',
             'lockedAt'
           ]) &&
@@ -45,6 +46,8 @@ service cloud.firestore {
           request.resource.data.points is int &&
           request.resource.data.points > 0 &&
           request.resource.data.points <= 100 &&
+          request.resource.data.entryDate is string &&
+          request.resource.data.entryDate.matches('^\\d{4}-\\d{2}-\\d{2}$') &&
           request.resource.data.createdAt == request.time &&
           request.resource.data.lockedAt > request.time &&
           request.resource.data.lockedAt < request.time + duration.value(25, 'h');

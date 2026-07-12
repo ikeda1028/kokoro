@@ -126,6 +126,7 @@ export async function createFirebaseStore(config) {
               photoUrl: post.photoUrl || "",
               iconUrl: post.iconUrl || "",
               kind: post.kind || "normal",
+              entryDate: post.entryDate || toDateKey(post.createdAt),
               createdAt: toIso(post.createdAt),
             };
           })
@@ -185,6 +186,7 @@ export async function createFirebaseStore(config) {
       photoUrl,
       iconUrl: post.iconUrl || "",
       kind: post.kind,
+      entryDate: post.entryDate,
       createdAt: firestoreModule.serverTimestamp(),
       lockedAt: firestoreModule.Timestamp.fromDate(new Date(Date.now() + 24 * 60 * 60 * 1000)),
     });
@@ -219,4 +221,12 @@ function toIso(value) {
   if (typeof value.toDate === "function") return value.toDate().toISOString();
   if (value instanceof Date) return value.toISOString();
   return String(value);
+}
+
+function toDateKey(value) {
+  const date = new Date(toIso(value));
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, "0");
+  const day = String(date.getDate()).padStart(2, "0");
+  return `${year}-${month}-${day}`;
 }

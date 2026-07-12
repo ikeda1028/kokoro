@@ -597,6 +597,17 @@ p {
   gap: 10px;
 }
 
+.composer-meta {
+  display: grid;
+  grid-template-columns: minmax(92px, 0.22fr) minmax(0, 1fr);
+  align-items: center;
+  gap: 10px;
+}
+
+.composer-meta label {
+  margin: 0;
+}
+
 .icon-option {
   display: grid;
   grid-template-columns: 42px minmax(0, 1fr);
