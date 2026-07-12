@@ -7,6 +7,18 @@ const SPECIAL_QR_CODES = {
   "SPECIAL-50": 50,
   "WELLNESS-20": 20,
 };
+const HEART_LEVELS = [
+  { threshold: 100, label: "100", mark: "♥", className: "seed" },
+  { threshold: 200, label: "200", mark: "♥", className: "glow" },
+  { threshold: 300, label: "300", mark: "♥", className: "wing" },
+  { threshold: 400, label: "400", mark: "♥", className: "ribbon" },
+  { threshold: 500, label: "500", mark: "♥♥", className: "double" },
+  { threshold: 600, label: "600", mark: "◆", className: "crystal" },
+  { threshold: 700, label: "700", mark: "♥", className: "star" },
+  { threshold: 800, label: "800", mark: "♥", className: "crown" },
+  { threshold: 900, label: "900", mark: "♥", className: "cosmic" },
+  { threshold: 1000, label: "1000", mark: "♥", className: "legend" },
+];
 
 const state = {
   data: loadData(),
@@ -672,6 +684,7 @@ function renderHeartExchange() {
   $("sendHeart").disabled = !heart.available;
   $("sendHeart").classList.toggle("hidden", !heart.available);
   $("heartStatus").textContent = heart.available ? "ハートを送れるよ" : "相手からのハート待ち";
+  renderHeartEvolution(heart.sentCount);
 
   if (heart.visible && heart.available && state.lastHeartAvailable === false) {
     const exchange = $("heartExchange");
@@ -682,6 +695,20 @@ function renderHeartExchange() {
     window.setTimeout(() => exchange.classList.remove("arrived"), 1100);
   }
   state.lastHeartAvailable = heart.visible ? heart.available : null;
+}
+
+function renderHeartEvolution(sentCount) {
+  const currentLevel = HEART_LEVELS.filter((level) => sentCount >= level.threshold).at(-1);
+  $("heartEvolution").innerHTML = HEART_LEVELS.map((level) => {
+    const unlocked = sentCount >= level.threshold;
+    const current = currentLevel?.threshold === level.threshold;
+    return `
+      <div class="heart-stage ${unlocked ? "unlocked" : "locked"} ${current ? "current" : ""}" title="${level.label}送信">
+        <span class="stage-heart ${level.className}">${level.mark}</span>
+        <span class="stage-label">${level.label}</span>
+      </div>
+    `;
+  }).join("");
 }
 
 function escapeHtml(value) {
