@@ -103,7 +103,11 @@ function currentRoom() {
 }
 
 function roomPosts() {
-  return [...currentRoom().posts].sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+  return [...currentRoom().posts].sort((a, b) => {
+    const dateCompare = recordDateKey(b).localeCompare(recordDateKey(a));
+    if (dateCompare) return dateCompare;
+    return new Date(b.createdAt) - new Date(a.createdAt);
+  });
 }
 
 function hashPassword(value) {
@@ -125,6 +129,10 @@ function dateKey(date) {
   const month = String(localDate.getMonth() + 1).padStart(2, "0");
   const day = String(localDate.getDate()).padStart(2, "0");
   return `${year}-${month}-${day}`;
+}
+
+function recordDateKey(post) {
+  return post.entryDate || dateKey(post.createdAt);
 }
 
 function isSameDay(a, b) {
@@ -415,6 +423,7 @@ function animateHeartSend() {
 
 async function addPost(points, kind = "normal", textOverride = "") {
   const text = textOverride || $("postText").value.trim();
+  const entryDate = $("recordDate").value || dateKey(new Date());
 
   const post = {
     id: newId(),
@@ -425,6 +434,7 @@ async function addPost(points, kind = "normal", textOverride = "") {
     photoData: kind === "normal" ? state.photoData : "",
     iconUrl: kind === "normal" ? state.selectedIconUrl : "",
     kind,
+    entryDate,
     createdAt: new Date().toISOString(),
   };
   const photoFile = kind === "normal" ? state.photoFile : null;
@@ -528,12 +538,12 @@ function totals() {
   const month = state.calendarDate.getMonth();
   return {
     today: posts
-      .filter((post) => dateKey(post.createdAt) === today)
+      .filter((post) => recordDateKey(post) === today)
       .reduce((sum, post) => sum + post.points, 0),
     month: posts
       .filter((post) => {
-        const created = new Date(post.createdAt);
-        return created.getFullYear() === year && created.getMonth() === month;
+        const recorded = new Date(`${recordDateKey(post)}T00:00:00`);
+        return recorded.getFullYear() === year && recorded.getMonth() === month;
       })
       .reduce((sum, post) => sum + post.points, 0),
     count: posts.length,
@@ -554,7 +564,7 @@ function renderCalendar() {
   const first = new Date(year, month, 1);
   const start = new Date(year, month, 1 - first.getDay());
   const postsByDate = currentRoom().posts.reduce((map, post) => {
-    const key = dateKey(post.createdAt);
+    const key = recordDateKey(post);
     map[key] = map[key] || [];
     map[key].push(post);
     return map;
@@ -600,7 +610,8 @@ function renderTimeline() {
   for (const post of posts) {
     const node = template.content.firstElementChild.cloneNode(true);
     node.querySelector(".post-author").textContent = post.authorName;
-    node.querySelector(".post-time").textContent = formatDateTime(post.createdAt);
+    node.querySelector(".post-time").textContent =
+      `${recordDateKey(post)} の記録 / 投稿 ${formatDateTime(post.createdAt)}`;
     const postPoints = node.querySelector(".post-points");
     if (post.iconUrl) {
       postPoints.innerHTML = `<img src="${escapeHtml(post.iconUrl)}" alt="" />`;
@@ -624,7 +635,7 @@ function renderAi() {
   const total = posts.reduce((sum, post) => sum + post.points, 0);
   const bestDay = Object.entries(
     posts.reduce((map, post) => {
-      const key = dateKey(post.createdAt);
+      const key = recordDateKey(post);
       map[key] = (map[key] || 0) + post.points;
       return map;
     }, {}),
@@ -723,6 +734,7 @@ function bindEvents() {
   $("todayLabel").textContent = new Intl.DateTimeFormat("ja-JP", {
     dateStyle: "full",
   }).format(new Date());
+  $("recordDate").value = dateKey(new Date());
 
   $("displayName").addEventListener("input", async (event) => {
     state.data.displayName = event.target.value.trim() || "あなた";
