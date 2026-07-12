@@ -190,8 +190,22 @@ p {
   font-weight: 800;
 }
 
+.secondary {
+  border-color: rgba(49, 91, 220, 0.24);
+  background: rgba(49, 91, 220, 0.08);
+  color: var(--mint-dark);
+  font-weight: 800;
+}
+
 .full {
   width: 100%;
+}
+
+.form-note {
+  color: var(--muted);
+  font-size: 12px;
+  font-weight: 800;
+  line-height: 1.5;
 }
 
 .qr-visual {
