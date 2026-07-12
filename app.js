@@ -10,6 +10,9 @@ const SPECIAL_QR_CODES = {
 
 const state = {
   data: loadData(),
+  activeRoomTab: "personal",
+  roomFormMode: "personal",
+  pendingGroup: null,
   selectedPoints: 1,
   selectedIconUrl: "./assets/icons/car.png",
   calendarDate: new Date(),
@@ -35,6 +38,8 @@ function defaultData() {
   return {
     currentUserId: userId,
     displayName: "あなた",
+    personalRegistered: false,
+    registeredGroups: {},
     currentRoomId: `personal:${userId}`,
     rooms: {
       [`personal:${userId}`]: {
@@ -52,10 +57,19 @@ function defaultData() {
 function loadData() {
   try {
     const saved = JSON.parse(localStorage.getItem(STORAGE_KEY));
-    return saved && saved.rooms ? saved : defaultData();
+    if (!saved || !saved.rooms) return defaultData();
+    return normalizeData(saved);
   } catch {
     return defaultData();
   }
+}
+
+function normalizeData(data) {
+  return {
+    ...data,
+    personalRegistered: Boolean(data.personalRegistered),
+    registeredGroups: data.registeredGroups || {},
+  };
 }
 
 function saveData() {
@@ -177,6 +191,11 @@ async function setRoom(roomId) {
 }
 
 async function ensurePersonalRoom() {
+  if (!state.data.personalRegistered) {
+    showPersonalRegister();
+    return;
+  }
+
   const id = `personal:${state.data.currentUserId}`;
   const room = {
     id,
@@ -202,11 +221,73 @@ async function ensurePersonalRoom() {
   await setRoom(id);
 }
 
+function showPersonalRegister() {
+  state.activeRoomTab = "personal";
+  state.roomFormMode = "personalRegister";
+  $("personalRegisterName").value = state.data.displayName === "あなた" ? "" : state.data.displayName;
+  renderRoomForms();
+}
+
+async function registerPersonal() {
+  const name = $("personalRegisterName").value.trim();
+  if (!name) {
+    $("personalStatus").textContent = "名前を入力してください";
+    return;
+  }
+
+  state.data.displayName = name;
+  state.data.personalRegistered = true;
+  saveData();
+  if (state.remote) await state.remote.saveUser(state.data.displayName);
+  state.roomFormMode = "personal";
+  await ensurePersonalRoom();
+}
+
+function showGroupRegister(code, password) {
+  state.activeRoomTab = "group";
+  state.roomFormMode = "groupRegister";
+  state.pendingGroup = { code, password };
+  $("groupRegisterSummary").textContent = `${code} を新規登録します`;
+  $("groupRegisterName").value = state.data.displayName === "あなた" ? "" : state.data.displayName;
+  $("groupRegisterTitle").value = code;
+  renderRoomForms();
+}
+
 async function enterGroup() {
   const code = safeRoomCode($("groupId").value);
   const password = $("groupPassword").value.trim();
   if (!code || !password) return;
 
+  const roomId = `group:${code}`;
+  if (!state.data.registeredGroups[roomId] && !state.data.rooms[roomId]) {
+    showGroupRegister(code, password);
+    return;
+  }
+
+  await joinGroup(code, password, state.data.displayName || "あなた", state.data.rooms[roomId]?.title || code);
+}
+
+async function registerGroup() {
+  if (!state.pendingGroup) return;
+  const displayName = $("groupRegisterName").value.trim();
+  if (!displayName) {
+    $("groupRegisterSummary").textContent = "投稿者名を入力してください";
+    return;
+  }
+
+  const title = $("groupRegisterTitle").value.trim() || state.pendingGroup.code;
+  state.data.displayName = displayName;
+  state.data.personalRegistered = true;
+  saveData();
+  if (state.remote) await state.remote.saveUser(state.data.displayName);
+  const group = state.pendingGroup;
+  state.pendingGroup = null;
+  state.roomFormMode = "group";
+  await joinGroup(group.code, group.password, displayName, title);
+  renderRoomForms();
+}
+
+async function joinGroup(code, password, displayName, title) {
   const roomId = `group:${code}`;
   const passwordHash = hashPassword(password);
   const existing = state.data.rooms[roomId];
@@ -222,9 +303,9 @@ async function enterGroup() {
         id: roomId,
         roomCode: code,
         type: "group",
-        title: code,
+        title,
         passwordHash,
-        displayName: state.data.displayName || "あなた",
+        displayName,
       });
     }
 
@@ -232,13 +313,18 @@ async function enterGroup() {
       state.data.rooms[roomId] = {
         id: roomId,
         type: "group",
-        title: code,
+        title,
         passwordHash,
         posts: [],
         heartEvents: [],
       };
     }
 
+    state.data.registeredGroups[roomId] = {
+      title,
+      registeredAt: new Date().toISOString(),
+    };
+    saveData();
     await setRoom(roomId);
   } catch (error) {
     $("qrStatus").textContent = error.message === "wrong-password" ? "PWが違います" : "入室エラー";
@@ -560,6 +646,23 @@ function render() {
   renderTimeline();
   renderAi();
   renderHeartExchange();
+  renderRoomForms();
+}
+
+function renderRoomForms() {
+  const isPersonal = state.activeRoomTab === "personal";
+  $("personalTab").classList.toggle("active", isPersonal);
+  $("groupTab").classList.toggle("active", !isPersonal);
+  $("personalForm").classList.toggle("hidden", !isPersonal || state.roomFormMode !== "personal");
+  $("personalRegisterForm").classList.toggle("hidden", !isPersonal || state.roomFormMode !== "personalRegister");
+  $("groupForm").classList.toggle("hidden", isPersonal || state.roomFormMode !== "group");
+  $("groupRegisterForm").classList.toggle("hidden", isPersonal || state.roomFormMode !== "groupRegister");
+
+  $("personalStatus").textContent = state.data.personalRegistered
+    ? "登録済みです"
+    : "まだ個人登録がありません";
+  $("enterPersonal").classList.toggle("hidden", !state.data.personalRegistered);
+  $("showPersonalRegister").classList.toggle("hidden", state.data.personalRegistered);
 }
 
 function renderHeartExchange() {
@@ -602,21 +705,31 @@ function bindEvents() {
   });
 
   $("personalTab").addEventListener("click", () => {
-    $("personalTab").classList.add("active");
-    $("groupTab").classList.remove("active");
-    $("personalForm").classList.remove("hidden");
-    $("groupForm").classList.add("hidden");
+    state.activeRoomTab = "personal";
+    state.roomFormMode = state.data.personalRegistered ? "personal" : "personalRegister";
+    renderRoomForms();
   });
 
   $("groupTab").addEventListener("click", () => {
-    $("groupTab").classList.add("active");
-    $("personalTab").classList.remove("active");
-    $("groupForm").classList.remove("hidden");
-    $("personalForm").classList.add("hidden");
+    state.activeRoomTab = "group";
+    state.roomFormMode = "group";
+    renderRoomForms();
   });
 
   $("enterPersonal").addEventListener("click", () => ensurePersonalRoom());
+  $("showPersonalRegister").addEventListener("click", showPersonalRegister);
+  $("registerPersonal").addEventListener("click", () => registerPersonal());
+  $("cancelPersonalRegister").addEventListener("click", () => {
+    state.roomFormMode = "personal";
+    renderRoomForms();
+  });
   $("enterGroup").addEventListener("click", () => enterGroup());
+  $("registerGroup").addEventListener("click", () => registerGroup());
+  $("cancelGroupRegister").addEventListener("click", () => {
+    state.pendingGroup = null;
+    state.roomFormMode = "group";
+    renderRoomForms();
+  });
   $("addPost").addEventListener("click", () => addPost(state.selectedPoints));
   $("refreshAi").addEventListener("click", renderAi);
   $("startQr").addEventListener("click", () =>

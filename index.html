@@ -30,7 +30,17 @@
           </div>
 
           <div id="personalForm" class="room-form">
+            <p id="personalStatus" class="form-note"></p>
             <button id="enterPersonal" class="primary full" type="button">個人ルームへ</button>
+            <button id="showPersonalRegister" class="secondary full hidden" type="button">個人を新規登録</button>
+          </div>
+
+          <div id="personalRegisterForm" class="room-form hidden">
+            <p class="form-note">個人用の名前を登録してください。</p>
+            <label for="personalRegisterName">名前</label>
+            <input id="personalRegisterName" type="text" maxlength="24" autocomplete="name" placeholder="あなたの名前" />
+            <button id="registerPersonal" class="primary full" type="button">登録して始める</button>
+            <button id="cancelPersonalRegister" class="secondary full" type="button">戻る</button>
           </div>
 
           <div id="groupForm" class="room-form hidden">
@@ -39,6 +49,17 @@
             <label for="groupPassword">PW</label>
             <input id="groupPassword" type="password" maxlength="32" placeholder="共有PW" />
             <button id="enterGroup" class="primary full" type="button">入室</button>
+            <p class="form-note">未登録のグループIDは新規登録画面へ進みます。</p>
+          </div>
+
+          <div id="groupRegisterForm" class="room-form hidden">
+            <p id="groupRegisterSummary" class="form-note"></p>
+            <label for="groupRegisterName">投稿者名</label>
+            <input id="groupRegisterName" type="text" maxlength="24" autocomplete="name" placeholder="グループで使う名前" />
+            <label for="groupRegisterTitle">表示名</label>
+            <input id="groupRegisterTitle" type="text" maxlength="32" placeholder="家族・チーム名など" />
+            <button id="registerGroup" class="primary full" type="button">登録して入室</button>
+            <button id="cancelGroupRegister" class="secondary full" type="button">戻る</button>
           </div>
         </section>
 
