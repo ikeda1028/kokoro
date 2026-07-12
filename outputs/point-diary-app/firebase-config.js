@@ -1,8 +1,8 @@
 export const firebaseConfig = {
-  apiKey: "YOUR_API_KEY",
-  authDomain: "YOUR_PROJECT_ID.firebaseapp.com",
-  projectId: "YOUR_PROJECT_ID",
-  storageBucket: "YOUR_PROJECT_ID.firebasestorage.app",
-  messagingSenderId: "YOUR_MESSAGING_SENDER_ID",
-  appId: "YOUR_APP_ID",
+  apiKey: "AIzaSyDD2quVCdSL9xC1rrpS4lZAwChAzonOIHo",
+  authDomain: "point-diary.firebaseapp.com",
+  projectId: "point-diary",
+  storageBucket: "point-diary.firebasestorage.app",
+  messagingSenderId: "823117363894",
+  appId: "1:823117363894:web:a7f5e257d759037f884417",
 };
